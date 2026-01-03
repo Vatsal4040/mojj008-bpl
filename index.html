@@ -220,7 +220,9 @@ header h1 {
   padding: 30px;
   border-radius: 14px;
 }
-
+.receipt {
+  display: block;
+}
 .receipt h2 {
   font-family: 'Chewy', cursive;
   text-align: center;
@@ -297,7 +299,7 @@ header h1 {
   <h3>🛒 Cart</h3>
   <div class="cart-items" id="cartItems"></div>
   <div class="cart-total" id="cartTotal"></div>
-  <button class="checkout" onclick="checkout()">Checkout</button>
+  <button class="checkout" onclick="">Checkout</button>
 </div>
 
 <div id="receipt" class="receipt"></div>
@@ -517,16 +519,47 @@ function renderCart() {
 }
 
 function checkout() {
-  const { total, remaining } = calculateTotals();
-  let html = `<h2>🧾 Receipt</h2>`;
+  if (Object.keys(cart).length === 0) return;
 
-  Object.values(cart).forEach(i => {
-    html += `
+  const { total, remaining } = calculateTotals();
+
+  let receiptHTML = `<h2>🧾 Receipt</h2>`;
+
+  Object.values(cart).forEach(item => {
+    receiptHTML += `
       <div style="display:flex;justify-content:space-between;margin:6px 0;">
-        <span>${i.emoji} ${i.name} × ${i.qty}</span>
-        <span>$${(i.price*i.qty).toLocaleString()}</span>
-      </div>`;
+        <span>${item.emoji} ${item.name} × ${item.qty}</span>
+        <span>$${(item.price * item.qty).toLocaleString()}</span>
+      </div>
+    `;
   });
+
+  receiptHTML += `
+    <hr style="border:1px solid #333">
+    <p><strong>Total Damage:</strong> $${total.toLocaleString()}</p>
+    <p><strong>Money Left:</strong> ${
+      remaining >= 0
+        ? "$" + remaining.toLocaleString()
+        : "<span style='color:#ff4d4d'>−$" + Math.abs(remaining).toLocaleString() + "</span>"
+    }</p>
+  `;
+
+  const receipt = document.getElementById("receipt");
+  receipt.innerHTML = receiptHTML;
+
+  /* ✅ IMMEDIATE VISUAL FEEDBACK */
+  const cartTitle = document.querySelector(".cart h3");
+  if (cartTitle) cartTitle.textContent = "🧾 Receipt";
+
+  /* ✅ BULLETPROOF SCROLL (WORKS ON MOBILE) */
+  requestAnimationFrame(() => {
+    receipt.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+  });
+}
+
 
   html += `
     <hr style="border:1px solid #333">
