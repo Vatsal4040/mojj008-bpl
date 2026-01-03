@@ -237,6 +237,43 @@ header h1 {
   font-size: 0.95em;
   cursor: pointer;
 }
+
+  /* ================= MOBILE FIX ================= */
+@media (max-width: 768px) {
+
+  /* Main content should use full width */
+  #categories {
+    margin-right: 0;
+  }
+
+  .search-bar {
+    width: calc(100% - 32px);
+  }
+
+  /* Cart becomes bottom bar */
+  .cart {
+    position: fixed;
+    right: 0;
+    left: 0;
+    bottom: 0;
+    top: auto;
+    width: 100%;
+    height: 180px;
+    border-left: none;
+    border-top: 2px solid #222;
+    z-index: 200;
+  }
+
+  .cart-items {
+    max-height: 80px;
+  }
+
+  /* Give page space so content isn't hidden */
+  body {
+    padding-bottom: 190px;
+  }
+}
+
 </style>
 </head>
 
