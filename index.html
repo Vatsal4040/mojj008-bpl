@@ -299,7 +299,7 @@ header h1 {
   <h3>🛒 Cart</h3>
   <div class="cart-items" id="cartItems"></div>
   <div class="cart-total" id="cartTotal"></div>
-  <button class="checkout" onclick="">Checkout</button>
+  <button class="checkout">Checkout</button>
 </div>
 
 <div id="receipt" class="receipt"></div>
@@ -443,7 +443,6 @@ const ITEMS = {
     {name:"End Irony",price:150000000,emoji:"🎭",tag:"absurd"},
     {name:"Reset Capitalism",price:8888888888,emoji:"🧨",tag:"absurd"}
   ]
-
 };
 
 const cart = {};
@@ -502,7 +501,7 @@ function renderCart() {
       <div class="cart-row">
         <span>${i.emoji} ${i.name} × ${i.qty}</span>
         <div class="cart-controls">
-          <button onclick="addItem(${JSON.stringify(i)})">+</button>
+          <button onclick="addItem(${JSON.stringify(i).replace(/"/g, '&quot;')})">+</button>
           <button onclick="decrementItem('${i.name}')">−</button>
           <button onclick="removeItem('${i.name}')">✖</button>
         </div>
@@ -542,44 +541,24 @@ function checkout() {
         ? "$" + remaining.toLocaleString()
         : "<span style='color:#ff4d4d'>−$" + Math.abs(remaining).toLocaleString() + "</span>"
     }</p>
+    
+    <button class="share-btn" id="shareBtn">📸 Share Screenshot</button>
   `;
 
   const receipt = document.getElementById("receipt");
   receipt.innerHTML = receiptHTML;
-
-  /* ✅ IMMEDIATE VISUAL FEEDBACK */
-  const cartTitle = document.querySelector(".cart h3");
-  if (cartTitle) cartTitle.textContent = "🧾 Receipt";
-
-  /* ✅ BULLETPROOF SCROLL (WORKS ON MOBILE) */
-  requestAnimationFrame(() => {
-    receipt.scrollIntoView({
-      behavior: "smooth",
-      block: "start"
-    });
-  });
-}
-
-
-  html += `
-    <hr style="border:1px solid #333">
-    <p><strong>Total Damage:</strong> $${total.toLocaleString()}</p>
-    <p><strong>Money Left:</strong> ${
-      remaining >= 0
-        ? "$"+remaining.toLocaleString()
-        : "<span style='color:#ff4d4d'>−$"+Math.abs(remaining).toLocaleString()+"</span>"
-    }</p>
-
-    <button class="share-btn" id="shareBtn">📸 Share Screenshot</button>
-  `;
-
-  receipt.innerHTML = html;
+  
+  // Clear cart after checkout
+  Object.keys(cart).forEach(key => delete cart[key]);
+  renderCart();
+  
+  // Scroll to receipt
   window.scrollTo({ top: document.body.scrollHeight, behavior:"smooth" });
 }
 
-function renderCategories() {
+function renderCategories(itemsObj = ITEMS) {
   categories.innerHTML = "";
-  Object.entries(ITEMS).forEach(([cat, items]) => {
+  Object.entries(itemsObj).forEach(([cat, items]) => {
     const div = document.createElement("div");
     div.className = "category";
     div.innerHTML = `<div class="category-header">${cat}</div>`;
@@ -603,6 +582,30 @@ function renderCategories() {
   });
 }
 
+function searchItems() {
+  const searchTerm = document.getElementById("search").value.toLowerCase();
+  
+  if (!searchTerm) {
+    renderCategories(ITEMS);
+    return;
+  }
+  
+  const filteredItems = {};
+  
+  Object.entries(ITEMS).forEach(([cat, items]) => {
+    const filtered = items.filter(item => 
+      item.name.toLowerCase().includes(searchTerm) || 
+      item.tag.toLowerCase().includes(searchTerm)
+    );
+    
+    if (filtered.length > 0) {
+      filteredItems[cat] = filtered;
+    }
+  });
+  
+  renderCategories(filteredItems);
+}
+
 async function shareScreenshot() {
   if (!window.html2canvas) {
     const s = document.createElement("script");
@@ -617,7 +620,7 @@ async function shareScreenshot() {
   wrap.style.padding = "20px";
 
   wrap.appendChild(document.querySelector("header").cloneNode(true));
-  wrap.appendChild(receipt.cloneNode(true));
+  wrap.appendChild(document.getElementById("receipt").cloneNode(true));
 
   document.body.appendChild(wrap);
 
@@ -630,8 +633,8 @@ async function shareScreenshot() {
     if (navigator.canShare && navigator.canShare({ files:[file] })) {
       navigator.share({
         files:[file],
-        title:"I spent Bill Gates’ money",
-        text:"I tried to spend all of Bill Gates’ money 💸"
+        title:"I spent Bill Gates' money",
+        text:"I tried to spend all of Bill Gates' money 💸"
       });
     } else {
       const a = document.createElement("a");
@@ -642,12 +645,23 @@ async function shareScreenshot() {
   });
 }
 
-document.addEventListener("click", e => {
-  if (e.target?.id === "shareBtn") shareScreenshot();
+// Initialize
+document.addEventListener("DOMContentLoaded", () => {
+  // Fix checkout button
+  document.querySelector(".checkout").onclick = checkout;
+  
+  // Add search functionality
+  document.getElementById("search").addEventListener("input", searchItems);
+  
+  // Initialize UI
+  renderCategories();
+  renderCart();
+  
+  // Event delegation for share button (since it's dynamically added)
+  document.addEventListener("click", e => {
+    if (e.target?.id === "shareBtn") shareScreenshot();
+  });
 });
-
-renderCategories();
-renderCart();
 </script>
 
 </body>
