@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Spend Bill Gates’ Money</title>
+
+<style>
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #0b0b0b;
+  color: #fff;
+}
+
+/* HEADER */
+header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: #000;
+  padding: 16px;
+  border-bottom: 2px solid #111;
+}
+
+header h1 {
+  margin: 0;
+  text-align: center;
+}
+
+/* MONEY BAR */
+.money-bar {
+  margin-top: 10px;
+  height: 12px;
+  background: #222;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.money-fill {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg,#00ff88,#00cc66);
+  transition: width .3s ease, background .3s ease;
+}
+
+.money-fill.negative {
+  background: linear-gradient(90deg,#ff4444,#ff0000);
+}
+
+/* SEARCH */
+.search-bar {
+  margin: 16px;
+  width: calc(100% - 360px);
+  padding: 10px;
+  border-radius: 8px;
+  border: none;
+}
+
+/* CONTENT */
+#categories {
+  margin-right: 340px;
+  padding-bottom: 120px;
+}
+
+/* ITEM GRID */
+.items {
+  display: grid;
+  grid-template-columns: repeat(auto-fill,minmax(140px,1fr));
+  gap: 14px;
+  padding: 16px;
+}
+
+.item {
+  background: #151515;
+  border-radius: 10px;
+  padding: 14px;
+  text-align: center;
+  cursor: pointer;
+  transition: transform .2s;
+}
+
+.item:hover {
+  transform: translateY(-4px);
+}
+
+.item-name {
+  font-size: .9em;
+  word-break: break-word;
+}
+
+.price {
+  margin-top: 4px;
+  color: #ffd700;
+  font-weight: bold;
+}
+
+/* CART */
+.cart {
+  position: fixed;
+  top: 86px;
+  right: 0;
+  width: 320px;
+  height: calc(100vh - 86px);
+  background: #111;
+  border-left: 2px solid #222;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+}
+
+.cart h3 {
+  text-align: center;
+  margin-top: 0;
+}
+
+.cart-items {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.cart-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: .85em;
+  margin: 6px 0;
+}
+
+.cart-controls button {
+  background: #333;
+  border: none;
+  color: #fff;
+  padding: 2px 6px;
+  cursor: pointer;
+}
+
+.cart-total {
+  text-align: center;
+  margin: 10px 0;
+  font-weight: bold;
+  color: #ffd700;
+}
+
+.checkout {
+  background: #ff0080;
+  border: none;
+  padding: 12px;
+  color: #fff;
+  font-size: 1em;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+/* RECEIPT */
+#receipt {
+  max-width: 700px;
+  margin: 60px auto 140px;
+  background: #151515;
+  padding: 24px;
+  border-radius: 14px;
+}
+
+/* MOBILE FIX */
+@media (max-width: 768px) {
+  #categories {
+    margin-right: 0;
+  }
+
+  .search-bar {
+    width: calc(100% - 32px);
+  }
+
+  .cart {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: auto;
+    width: 100%;
+    height: 180px;
+    border-left: none;
+    border-top: 2px solid #222;
+  }
+
+  body {
+    padding-bottom: 190px;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>💸 Spend Bill Gates’ Money</h1>
+  <div class="money-bar">
+    <div id="moneyFill" class="money-fill"></div>
+  </div>
+</header>
+
+<input class="search-bar" placeholder="Search items…" disabled />
+
+<div id="categories">
+  <div class="items" id="items"></div>
+</div>
+
+<div class="cart">
+  <h3>🛒 Cart</h3>
+  <div class="cart-items" id="cartItems"></div>
+  <div class="cart-total" id="cartTotal"></div>
+  <button class="checkout" onclick="checkout()">Checkout</button>
+</div>
+
+<div id="receipt"></div>
+
+<script>
+/* ================= DATA ================= */
+const START_MONEY = 100000000000;
+let cart = {};
+
+const ITEMS = {
+  "🎁 Everyday": [
+    {name:"Coffee",price:2,emoji:"☕",tag:"everyday"},
+    {name:"Big Mac",price:5,emoji:"🍔",tag:"everyday"},
+    {name:"Burger King Whopper",price:6,emoji:"🍔",tag:"everyday"},
+    {name:"Ice Cream Cone",price:3,emoji:"🍦",tag:"everyday"},
+    {name:"Pack of Chips",price:2,emoji:"🍟",tag:"everyday"},
+    {name:"Chocolate Bar",price:1,emoji:"🍫",tag:"everyday"},
+    {name:"Soda",price:2,emoji:"🥤",tag:"everyday"},
+    {name:"Water Bottle",price:1,emoji:"💧",tag:"everyday"},
+    {name:"Pizza Slice",price:4,emoji:"🍕",tag:"everyday"},
+    {name:"Donut",price:2,emoji:"🍩",tag:"everyday"},
+    {name:"Sandwich",price:3,emoji:"🥪",tag:"everyday"},
+    {name:"Taco",price:4,emoji:"🌮",tag:"everyday"},
+    {name:"Pancakes",price:5,emoji:"🥞",tag:"everyday"},
+    {name:"French Fries",price:3,emoji:"🍟",tag:"everyday"},
+    {name:"Bagel",price:2,emoji:"🥯",tag:"everyday"},
+    {name:"Muffin",price:3,emoji:"🧁",tag:"everyday"},
+    {name:"Cookie",price:1,emoji:"🍪",tag:"everyday"},
+    {name:"Smoothie",price:4,emoji:"🍹",tag:"everyday"},
+    {name:"Juice",price:3,emoji:"🧃",tag:"everyday"},
+    {name:"Milkshake",price:5,emoji:"🥛",tag:"everyday"}
+  ],
+
+  "📱 Tech & Lifestyle": [
+    {name:"Smartphone",price:1000,emoji:"📱",tag:"tech"},
+    {name:"Laptop",price:1200,emoji:"💻",tag:"tech"},
+    {name:"Smartwatch",price:400,emoji:"⌚",tag:"tech"},
+    {name:"Wireless Earbuds",price:150,emoji:"🎧",tag:"tech"},
+    {name:"VR Headset",price:500,emoji:"🕶️",tag:"tech"},
+    {name:"Gaming Console",price:500,emoji:"🎮",tag:"tech"},
+    {name:"Drone",price:700,emoji:"🛸",tag:"tech"},
+    {name:"Electric Scooter",price:800,emoji:"🛴",tag:"tech"},
+    {name:"Fitness Tracker",price:120,emoji:"🏃‍♂️",tag:"tech"},
+    {name:"Camera",price:900,emoji:"📷",tag:"tech"},
+    {name:"Tablet",price:600,emoji:"📲",tag:"tech"},
+    {name:"3D Printer",price:2000,emoji:"🖨️",tag:"tech"},
+    {name:"Smart Glasses",price:1000,emoji:"🕶️",tag:"tech"},
+    {name:"Gaming Mouse",price:80,emoji:"🖱️",tag:"tech"},
+    {name:"Mechanical Keyboard",price:120,emoji:"⌨️",tag:"tech"}
+  ],
+
+  "🚗 Vehicles": [
+    {name:"Bicycle",price:150,emoji:"🚲",tag:"vehicle"},
+    {name:"Motorbike",price:1000,emoji:"🏍️",tag:"vehicle"},
+    {name:"Car",price:20000,emoji:"🚗",tag:"vehicle"},
+    {name:"Electric Car",price:35000,emoji:"🚙",tag:"vehicle"},
+    {name:"Yacht",price:5000000,emoji:"🛥️",tag:"vehicle"},
+    {name:"Private Jet",price:50000000,emoji:"✈️",tag:"vehicle"},
+    {name:"Skateboard",price:50,emoji:"🛹",tag:"vehicle"},
+    {name:"Truck",price:30000,emoji:"🚚",tag:"vehicle"},
+    {name:"Helicopter",price:2000000,emoji:"🚁",tag:"vehicle"},
+    {name:"Tractor",price:15000,emoji:"🚜",tag:"vehicle"},
+    {name:"Segway",price:600,emoji:"🛴",tag:"vehicle"},
+    {name:"Roller Skates",price:80,emoji:"🛼",tag:"vehicle"},
+    {name:"Electric Bike",price:1200,emoji:"🚲",tag:"vehicle"},
+    {name:"Scooter",price:400,emoji:"🛵",tag:"vehicle"},
+    {name:"Bus",price:50000,emoji:"🚌",tag:"vehicle"}
+  ],
+
+  "🏠 Property": [
+    {name:"Small Apartment",price:100000,emoji:"🏢",tag:"property"},
+    {name:"Family House",price:300000,emoji:"🏠",tag:"property"},
+    {name:"Luxury Villa",price:2000000,emoji:"🏡",tag:"property"},
+    {name:"Castle",price:10000000,emoji:"🏰",tag:"property"},
+    {name:"Penthouse",price:5000000,emoji:"🏙️",tag:"property"},
+    {name:"Beach House",price:4000000,emoji:"🏖️",tag:"property"},
+    {name:"Farmhouse",price:700000,emoji:"🌾",tag:"property"},
+    {name:"Treehouse",price:100000,emoji:"🌳",tag:"property"},
+    {name:"Igloo",price:50000,emoji:"🧊",tag:"property"},
+    {name:"Cave Home",price:80000,emoji:"🕳️",tag:"property"},
+    {name:"Mansion",price:8000000,emoji:"🏛️",tag:"property"},
+    {name:"Studio Apartment",price:90000,emoji:"🏘️",tag:"property"},
+    {name:"Loft",price:150000,emoji:"🏚️",tag:"property"},
+    {name:"Cabin",price:120000,emoji:"🛖",tag:"property"},
+    {name:"Chalet",price:300000,emoji:"⛷️",tag:"property"}
+  ],
+
+  "✈️ Air & Sea": [
+    {name:"Commercial Plane Ticket",price:500,emoji:"✈️",tag:"travel"},
+    {name:"Private Jet Flight",price:100000,emoji:"🛩️",tag:"travel"},
+    {name:"Cruise Ticket",price:2000,emoji:"🚢",tag:"travel"},
+    {name:"Submarine",price:10000000,emoji:"🛳️",tag:"travel"},
+    {name:"Hot Air Balloon Ride",price:300,emoji:"🎈",tag:"travel"},
+    {name:"Paragliding Session",price:150,emoji:"🪂",tag:"travel"},
+    {name:"Sailboat",price:50000,emoji:"⛵",tag:"travel"},
+    {name:"Jet Ski",price:8000,emoji:"🛥️",tag:"travel"},
+    {name:"Ferry Ticket",price:20,emoji:"⛴️",tag:"travel"},
+    {name:"Space Shuttle Ticket",price:5000000,emoji:"🚀",tag:"travel"},
+    {name:"Kayak",price:500,emoji:"🛶",tag:"travel"},
+    {name:"Fishing Boat",price:10000,emoji:"🎣",tag:"travel"},
+    {name:"Luxury Cruise",price:200000,emoji:"🛳️",tag:"travel"},
+    {name:"Hovercraft",price:500000,emoji:"🛴",tag:"travel"},
+    {name:"Speedboat",price:80000,emoji:"🚤",tag:"travel"}
+  ],
+
+  "🟣 Science & Future": [
+    {name:"Human Longevity Research",price:1500000,emoji:"🧬",tag:"future"},
+    {name:"Global Solar Infrastructure",price:2200000,emoji:"☀️",tag:"future"},
+    {name:"Climate Repair Program",price:3000000,emoji:"🌱",tag:"future"},
+    {name:"Cure for a Rare Disease",price:4500000,emoji:"🧪",tag:"future"},
+    {name:"Planetary Defense System",price:4000000,emoji:"🌍",tag:"future"},
+    {name:"Synthetic Life Lab",price:11000000,emoji:"🧫",tag:"future"},
+    {name:"Artificial General Intelligence",price:60000000,emoji:"🧠",tag:"future"},
+    {name:"Deep Space Observatory",price:9500000,emoji:"🛰️",tag:"future"},
+    {name:"Mars Colonization Program",price:80000000,emoji:"🧑‍🚀",tag:"future"},
+    {name:"Black Hole Research Facility",price:25000000,emoji:"🕳️",tag:"future"}
+  ],
+
+  "🟠 World-Scale Projects": [
+    {name:"Global Internet Access",price:10000000,emoji:"🌐",tag:"world"},
+    {name:"Worldwide High-Speed Rail",price:12000000,emoji:"🚄",tag:"world"},
+    {name:"Ocean Cleanup Network",price:9000000,emoji:"🌊",tag:"world"},
+    {name:"Rebuild a Country",price:25000000,emoji:"🏗️",tag:"world"},
+    {name:"Terraform a Desert",price:18000000,emoji:"🌍",tag:"world"},
+    {name:"Stop Climate Change (Temporarily)",price:3000000,emoji:"❄️",tag:"world"},
+    {name:"Infinite Energy Prototype",price:22000000,emoji:"🔋",tag:"world"},
+    {name:"Global Navigation System",price:75000000,emoji:"🧭",tag:"world"},
+    {name:"Floating Cities",price:14000000,emoji:"🏙️",tag:"world"},
+    {name:"Interplanetary Trade Network",price:40000000,emoji:"🚀",tag:"world"}
+  ],
+
+  "🔴 Absurd / Endgame": [
+    {name:"Buy Human Attention",price:100000000,emoji:"🧠",tag:"absurd"},
+    {name:"Delete the Stock Market",price:85000000,emoji:"📉",tag:"absurd"},
+    {name:"Pause Time for Everyone Else",price:200000000,emoji:"⏳",tag:"absurd"},
+    {name:"Own the Observable Universe",price:900000000,emoji:"🌌",tag:"absurd"},
+    {name:"Rewrite History Books",price:70000000,emoji:"🧾",tag:"absurd"},
+    {name:"Buy Physics DLC",price:3500000000,emoji:"🪐",tag:"absurd"},
+    {name:"Silence the Internet for 1 Hour",price:600000000,emoji:"📡",tag:"absurd"},
+    {name:"Understand Everything",price:4200000000,emoji:"🤯",tag:"absurd"},
+    {name:"End Irony",price:150000000,emoji:"🎭",tag:"absurd"},
+    {name:"Reset Capitalism",price:8888888888,emoji:"🧨",tag:"absurd"}
+  ]
+
+};
+
+/* ================= RENDER ITEMS ================= */
+const itemsEl = document.getElementById("items");
+
+ITEMS.forEach(item => {
+  const div = document.createElement("div");
+  div.className = "item";
+  div.innerHTML = `
+    <div style="font-size:2em">${item.emoji}</div>
+    <div class="item-name">${item.name}</div>
+    <div class="price">$${item.price.toLocaleString()}</div>
+  `;
+  div.onclick = () => addItem(item);
+  itemsEl.appendChild(div);
+});
+
+/* ================= CART LOGIC ================= */
+function addItem(item) {
+  cart[item.name] ??= { ...item, qty: 0 };
+  cart[item.name].qty++;
+  renderCart();
+}
+
+function calculateTotals() {
+  let total = 0;
+  Object.values(cart).forEach(i => total += i.price * i.qty);
+  return { total, remaining: START_MONEY - total };
+}
+
+function renderCart() {
+  const cartItems = document.getElementById("cartItems");
+  cartItems.innerHTML = "";
+
+  Object.values(cart).forEach(i => {
+    cartItems.innerHTML += `
+      <div class="cart-row">
+        <span>${i.emoji} ${i.name} × ${i.qty}</span>
+        <div class="cart-controls">
+          <button onclick="addItem(${JSON.stringify(i)})">+</button>
+        </div>
+      </div>
+    `;
+  });
+
+  const { total, remaining } = calculateTotals();
+  document.getElementById("cartTotal").innerHTML =
+    `Total: $${total.toLocaleString()}<br>
+     Left: ${remaining >= 0 ? "$"+remaining.toLocaleString() : "−$"+Math.abs(remaining).toLocaleString()}`;
+
+  const fill = document.getElementById("moneyFill");
+  const pct = Math.max(0, remaining / START_MONEY) * 100;
+  fill.style.width = pct + "%";
+  fill.classList.toggle("negative", remaining < 0);
+}
+
+/* ================= CHECKOUT ================= */
+function checkout() {
+  if (Object.keys(cart).length === 0) return;
+
+  const { total, remaining } = calculateTotals();
+  const receipt = document.getElementById("receipt");
+
+  let html = `<h2>🧾 Receipt</h2>`;
+
+  Object.values(cart).forEach(i => {
+    html += `
+      <div style="display:flex;justify-content:space-between;margin:6px 0;">
+        <span>${i.emoji} ${i.name} × ${i.qty}</span>
+        <span>$${(i.price * i.qty).toLocaleString()}</span>
+      </div>
+    `;
+  });
+
+  html += `
+    <hr style="border:1px solid #333">
+    <p><strong>Total Damage:</strong> $${total.toLocaleString()}</p>
+    <p><strong>Money Left:</strong> ${
+      remaining >= 0
+        ? "$"+remaining.toLocaleString()
+        : "<span style='color:#ff4d4d'>−$"+Math.abs(remaining).toLocaleString()+"</span>"
+    }</p>
+  `;
+
+  receipt.innerHTML = html;
+  document.querySelector(".cart h3").textContent = "🧾 Receipt";
+
+  requestAnimationFrame(() => {
+    receipt.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+}
+
+renderCart();
+</script>
+
+</body>
+</html>
