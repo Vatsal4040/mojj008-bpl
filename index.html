@@ -522,17 +522,43 @@ function checkout() {
   if (Object.keys(cart).length === 0) return;
 
   const { total, remaining } = calculateTotals();
+  const receipt = document.getElementById("receipt");
 
-  let receiptHTML = `<h2>🧾 Receipt</h2>`;
+  let html = `<h2>🧾 Receipt</h2>`;
 
   Object.values(cart).forEach(item => {
-    receiptHTML += `
+    html += `
       <div style="display:flex;justify-content:space-between;margin:6px 0;">
         <span>${item.emoji} ${item.name} × ${item.qty}</span>
         <span>$${(item.price * item.qty).toLocaleString()}</span>
       </div>
     `;
   });
+
+  html += `
+    <hr style="border:1px solid #333">
+    <p><strong>Total Damage:</strong> $${total.toLocaleString()}</p>
+    <p><strong>Money Left:</strong> ${
+      remaining >= 0
+        ? "$" + remaining.toLocaleString()
+        : "<span style='color:#ff4d4d'>−$" + Math.abs(remaining).toLocaleString() + "</span>"
+    }</p>
+
+    <button class="share-btn" id="shareBtn">📸 Share Screenshot</button>
+  `;
+
+  receipt.innerHTML = html;
+
+  // Visual feedback
+  const cartTitle = document.querySelector(".cart h3");
+  if (cartTitle) cartTitle.textContent = "🧾 Receipt";
+
+  // Reliable scroll
+  requestAnimationFrame(() => {
+    receipt.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+}
+
 
   receiptHTML += `
     <hr style="border:1px solid #333">
