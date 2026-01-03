@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Spend Bill Gates’ Money</title>
+<title>Spend Bill Gates' Money</title>
 
 <style>
 * { box-sizing: border-box; }
@@ -57,12 +57,26 @@ header h1 {
   padding: 10px;
   border-radius: 8px;
   border: none;
+  font-size: 1em;
 }
 
-/* CONTENT */
+/* CATEGORIES */
 #categories {
   margin-right: 340px;
   padding-bottom: 120px;
+}
+
+.category {
+  margin: 20px 16px;
+}
+
+.category-header {
+  font-size: 1.3em;
+  font-weight: bold;
+  padding: 10px 16px;
+  background: linear-gradient(90deg, #ff8c00, #ff0080);
+  border-radius: 8px;
+  margin-bottom: 12px;
 }
 
 /* ITEM GRID */
@@ -70,7 +84,6 @@ header h1 {
   display: grid;
   grid-template-columns: repeat(auto-fill,minmax(140px,1fr));
   gap: 14px;
-  padding: 16px;
 }
 
 .item {
@@ -79,22 +92,30 @@ header h1 {
   padding: 14px;
   text-align: center;
   cursor: pointer;
-  transition: transform .2s;
+  transition: transform .2s, background .2s;
 }
 
 .item:hover {
   transform: translateY(-4px);
+  background: #222;
+}
+
+.item-emoji {
+  font-size: 2em;
+  display: block;
+  margin-bottom: 8px;
 }
 
 .item-name {
   font-size: .9em;
   word-break: break-word;
+  margin-bottom: 6px;
 }
 
 .price {
-  margin-top: 4px;
   color: #ffd700;
   font-weight: bold;
+  font-size: .85em;
 }
 
 /* CART */
@@ -114,6 +135,7 @@ header h1 {
 .cart h3 {
   text-align: center;
   margin-top: 0;
+  color: #ff8c00;
 }
 
 .cart-items {
@@ -124,16 +146,26 @@ header h1 {
 .cart-row {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   font-size: .85em;
-  margin: 6px 0;
+  margin: 8px 0;
+  padding: 4px 0;
+  border-bottom: 1px solid #222;
+}
+
+.cart-controls {
+  display: flex;
+  gap: 4px;
 }
 
 .cart-controls button {
   background: #333;
   border: none;
   color: #fff;
-  padding: 2px 6px;
+  padding: 2px 8px;
   cursor: pointer;
+  border-radius: 4px;
+  font-size: .9em;
 }
 
 .cart-total {
@@ -141,6 +173,7 @@ header h1 {
   margin: 10px 0;
   font-weight: bold;
   color: #ffd700;
+  font-size: 1em;
 }
 
 .checkout {
@@ -151,6 +184,11 @@ header h1 {
   font-size: 1em;
   border-radius: 8px;
   cursor: pointer;
+  transition: background .2s;
+}
+
+.checkout:hover {
+  background: #ff0066;
 }
 
 /* RECEIPT */
@@ -160,6 +198,32 @@ header h1 {
   background: #151515;
   padding: 24px;
   border-radius: 14px;
+  display: none;
+}
+
+.receipt-header {
+  text-align: center;
+  font-size: 1.8em;
+  margin-bottom: 20px;
+  color: #ff8c00;
+}
+
+.receipt-item {
+  display: flex;
+  justify-content: space-between;
+  margin: 10px 0;
+  padding: 8px 0;
+  border-bottom: 1px solid #333;
+}
+
+.receipt-total {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 2px solid #444;
+  font-size: 1.2em;
+  font-weight: bold;
 }
 
 /* MOBILE FIX */
@@ -194,29 +258,27 @@ header h1 {
 <body>
 
 <header>
-  <h1>💸 Spend Bill Gates’ Money</h1>
+  <h1>💸 Spend Bill Gates' Money</h1>
   <div class="money-bar">
     <div id="moneyFill" class="money-fill"></div>
   </div>
 </header>
 
-<input class="search-bar" placeholder="Search items…" disabled />
+<input id="searchInput" class="search-bar" placeholder="Search items…" />
 
-<div id="categories">
-  <div class="items" id="items"></div>
-</div>
+<div id="categories"></div>
 
 <div class="cart">
   <h3>🛒 Cart</h3>
   <div class="cart-items" id="cartItems"></div>
-  <div class="cart-total" id="cartTotal"></div>
+  <div class="cart-total" id="cartTotal">Total: $0<br>Left: $100,000,000,000</div>
   <button class="checkout" onclick="checkout()">Checkout</button>
 </div>
 
 <div id="receipt"></div>
 
 <script>
-/* ================= DATA ================= */
+// ================= DATA =================
 const START_MONEY = 100000000000;
 let cart = {};
 
@@ -354,100 +416,195 @@ const ITEMS = {
     {name:"End Irony",price:150000000,emoji:"🎭",tag:"absurd"},
     {name:"Reset Capitalism",price:8888888888,emoji:"🧨",tag:"absurd"}
   ]
-
 };
 
-/* ================= RENDER ITEMS ================= */
-const itemsEl = document.getElementById("items");
+// ================= RENDER CATEGORIES =================
+function renderCategories(itemsObj = ITEMS) {
+  const categoriesEl = document.getElementById('categories');
+  categoriesEl.innerHTML = '';
+  
+  Object.entries(itemsObj).forEach(([categoryName, items]) => {
+    const categoryDiv = document.createElement('div');
+    categoryDiv.className = 'category';
+    
+    categoryDiv.innerHTML = `
+      <div class="category-header">${categoryName}</div>
+      <div class="items" id="items-${categoryName.replace(/\s+/g, '-')}"></div>
+    `;
+    
+    categoriesEl.appendChild(categoryDiv);
+    
+    const itemsGrid = categoryDiv.querySelector('.items');
+    items.forEach(item => {
+      const itemDiv = document.createElement('div');
+      itemDiv.className = 'item';
+      itemDiv.innerHTML = `
+        <span class="item-emoji">${item.emoji}</span>
+        <div class="item-name">${item.name}</div>
+        <div class="price">$${item.price.toLocaleString()}</div>
+      `;
+      itemDiv.onclick = () => addItem(item);
+      itemsGrid.appendChild(itemDiv);
+    });
+  });
+}
 
-ITEMS.forEach(item => {
-  const div = document.createElement("div");
-  div.className = "item";
-  div.innerHTML = `
-    <div style="font-size:2em">${item.emoji}</div>
-    <div class="item-name">${item.name}</div>
-    <div class="price">$${item.price.toLocaleString()}</div>
-  `;
-  div.onclick = () => addItem(item);
-  itemsEl.appendChild(div);
+// ================= SEARCH FUNCTIONALITY =================
+document.getElementById('searchInput').addEventListener('input', function(e) {
+  const searchTerm = e.target.value.toLowerCase().trim();
+  
+  if (!searchTerm) {
+    renderCategories(ITEMS);
+    return;
+  }
+  
+  const filteredItems = {};
+  
+  Object.entries(ITEMS).forEach(([categoryName, items]) => {
+    const filtered = items.filter(item => 
+      item.name.toLowerCase().includes(searchTerm) || 
+      item.tag.toLowerCase().includes(searchTerm)
+    );
+    
+    if (filtered.length > 0) {
+      filteredItems[categoryName] = filtered;
+    }
+  });
+  
+  renderCategories(filteredItems);
 });
 
-/* ================= CART LOGIC ================= */
+// ================= CART LOGIC =================
 function addItem(item) {
-  cart[item.name] ??= { ...item, qty: 0 };
+  if (!cart[item.name]) {
+    cart[item.name] = { ...item, qty: 0 };
+  }
   cart[item.name].qty++;
+  renderCart();
+}
+
+function decrementItem(name) {
+  if (!cart[name]) return;
+  
+  cart[name].qty--;
+  if (cart[name].qty <= 0) {
+    delete cart[name];
+  }
+  renderCart();
+}
+
+function removeItem(name) {
+  delete cart[name];
   renderCart();
 }
 
 function calculateTotals() {
   let total = 0;
-  Object.values(cart).forEach(i => total += i.price * i.qty);
-  return { total, remaining: START_MONEY - total };
+  Object.values(cart).forEach(item => {
+    total += item.price * item.qty;
+  });
+  return { 
+    total, 
+    remaining: START_MONEY - total 
+  };
 }
 
 function renderCart() {
-  const cartItems = document.getElementById("cartItems");
-  cartItems.innerHTML = "";
-
-  Object.values(cart).forEach(i => {
-    cartItems.innerHTML += `
-      <div class="cart-row">
-        <span>${i.emoji} ${i.name} × ${i.qty}</span>
-        <div class="cart-controls">
-          <button onclick="addItem(${JSON.stringify(i)})">+</button>
-        </div>
+  const cartItemsEl = document.getElementById('cartItems');
+  cartItemsEl.innerHTML = '';
+  
+  Object.values(cart).forEach(item => {
+    const row = document.createElement('div');
+    row.className = 'cart-row';
+    row.innerHTML = `
+      <span>${item.emoji} ${item.name} × ${item.qty}</span>
+      <div class="cart-controls">
+        <button onclick="addItem(${JSON.stringify(item).replace(/"/g, '&quot;')})">+</button>
+        <button onclick="decrementItem('${item.name}')">−</button>
+        <button onclick="removeItem('${item.name}')">✖</button>
       </div>
     `;
+    cartItemsEl.appendChild(row);
   });
-
+  
   const { total, remaining } = calculateTotals();
-  document.getElementById("cartTotal").innerHTML =
-    `Total: $${total.toLocaleString()}<br>
-     Left: ${remaining >= 0 ? "$"+remaining.toLocaleString() : "−$"+Math.abs(remaining).toLocaleString()}`;
-
-  const fill = document.getElementById("moneyFill");
-  const pct = Math.max(0, remaining / START_MONEY) * 100;
-  fill.style.width = pct + "%";
-  fill.classList.toggle("negative", remaining < 0);
-}
-
-/* ================= CHECKOUT ================= */
-function checkout() {
-  if (Object.keys(cart).length === 0) return;
-
-  const { total, remaining } = calculateTotals();
-  const receipt = document.getElementById("receipt");
-
-  let html = `<h2>🧾 Receipt</h2>`;
-
-  Object.values(cart).forEach(i => {
-    html += `
-      <div style="display:flex;justify-content:space-between;margin:6px 0;">
-        <span>${i.emoji} ${i.name} × ${i.qty}</span>
-        <span>$${(i.price * i.qty).toLocaleString()}</span>
-      </div>
-    `;
-  });
-
-  html += `
-    <hr style="border:1px solid #333">
-    <p><strong>Total Damage:</strong> $${total.toLocaleString()}</p>
-    <p><strong>Money Left:</strong> ${
-      remaining >= 0
-        ? "$"+remaining.toLocaleString()
-        : "<span style='color:#ff4d4d'>−$"+Math.abs(remaining).toLocaleString()+"</span>"
-    }</p>
+  const cartTotalEl = document.getElementById('cartTotal');
+  const moneyFillEl = document.getElementById('moneyFill');
+  
+  cartTotalEl.innerHTML = `
+    Total: $${total.toLocaleString()}<br>
+    Left: ${remaining >= 0 ? '$' + remaining.toLocaleString() : '−$' + Math.abs(remaining).toLocaleString()}
   `;
-
-  receipt.innerHTML = html;
-  document.querySelector(".cart h3").textContent = "🧾 Receipt";
-
-  requestAnimationFrame(() => {
-    receipt.scrollIntoView({ behavior: "smooth", block: "start" });
-  });
+  
+  const percent = Math.max(0, remaining / START_MONEY) * 100;
+  moneyFillEl.style.width = percent + '%';
+  
+  if (remaining < 0) {
+    moneyFillEl.classList.add('negative');
+  } else {
+    moneyFillEl.classList.remove('negative');
+  }
 }
 
-renderCart();
+// ================= CHECKOUT =================
+function checkout() {
+  if (Object.keys(cart).length === 0) {
+    alert('Your cart is empty! Add some items first.');
+    return;
+  }
+  
+  const { total, remaining } = calculateTotals();
+  const receiptEl = document.getElementById('receipt');
+  
+  let html = `
+    <div class="receipt-header">🧾 Receipt</div>
+  `;
+  
+  Object.values(cart).forEach(item => {
+    html += `
+      <div class="receipt-item">
+        <span>${item.emoji} ${item.name} × ${item.qty}</span>
+        <span>$${(item.price * item.qty).toLocaleString()}</span>
+      </div>
+    `;
+  });
+  
+  html += `
+    <div class="receipt-total">
+      <span>Total Damage:</span>
+      <span>$${total.toLocaleString()}</span>
+    </div>
+    <div class="receipt-total" style="color: ${remaining >= 0 ? '#ffd700' : '#ff4444'}">
+      <span>Money Left:</span>
+      <span>${remaining >= 0 ? '$' + remaining.toLocaleString() : '−$' + Math.abs(remaining).toLocaleString()}</span>
+    </div>
+  `;
+  
+  receiptEl.innerHTML = html;
+  receiptEl.style.display = 'block';
+  
+  // Update cart header
+  document.querySelector('.cart h3').textContent = '🧾 Receipt';
+  
+  // Scroll to receipt
+  setTimeout(() => {
+    receiptEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 100);
+  
+  // Clear cart after checkout
+  cart = {};
+  renderCart();
+}
+
+// ================= INITIALIZE =================
+document.addEventListener('DOMContentLoaded', () => {
+  renderCategories();
+  renderCart();
+  
+  // Initialize money bar
+  const moneyFillEl = document.getElementById('moneyFill');
+  moneyFillEl.style.width = '100%';
+});
 </script>
 
 </body>
